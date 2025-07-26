@@ -566,6 +566,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadSettings();
             setupEventListeners();
+            updateButtonStates(); // Initialize button states
             document.getElementById('text-area').focus();
         });
 
@@ -630,6 +631,7 @@
             if (words.length > 0) {
                 displayWord(words[0]);
             }
+            updateButtonStates(); // Update button states when new text is loaded
         }
 
         // Display word with focus letter highlighting
@@ -730,15 +732,38 @@
             }
             updateStats();
             updateProgress();
+            updateButtonStates(); // Update button states after reset
         }
 
         function skipWords(count) {
-            currentIndex = Math.max(0, Math.min(words.length - 1, currentIndex + count));
+            if (words.length === 0) return; // Don't skip if no text is loaded
+            
+            const wasPlaying = isPlaying;
+            if (wasPlaying) {
+                stopReading(); // Temporarily stop reading while skipping
+            }
+            
+            const newIndex = currentIndex + count;
+            currentIndex = Math.max(0, Math.min(words.length - 1, newIndex));
+            
             if (words[currentIndex]) {
                 displayWord(words[currentIndex]);
             }
             updateStats();
             updateProgress();
+            
+            // Resume reading if it was playing before
+            if (wasPlaying) {
+                startReading();
+            }
+            
+            // Add visual feedback for button press
+            const buttonId = count > 0 ? 'forward-btn' : 'backward-btn';
+            const button = document.getElementById(buttonId);
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 100);
         }
 
         function adjustSpeed(change) {
@@ -767,6 +792,23 @@
             
             document.getElementById('time-remaining').textContent = 
                 `${displayMinutes}:${displaySeconds.toString().padStart(2, '0')}`;
+                
+            // Update button states
+            updateButtonStates();
+        }
+        
+        function updateButtonStates() {
+            const hasText = words.length > 0;
+            const backBtn = document.getElementById('backward-btn');
+            const forwardBtn = document.getElementById('forward-btn');
+            const playBtn = document.getElementById('play-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            
+            // Enable/disable buttons based on text availability
+            backBtn.disabled = !hasText || currentIndex === 0;
+            forwardBtn.disabled = !hasText || currentIndex >= words.length - 1;
+            playBtn.disabled = !hasText;
+            resetBtn.disabled = !hasText;
         }
 
         function updateProgress() {
