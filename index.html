@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSVP Speed Reader</title>
+    <meta name="description" content="Speed reading app using Rapid Serial Visual Presentation">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+    
+    <!-- PWA iOS Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <style>
+        :root {
+            --primary: #16213e;
+            --secondary: #0f3460;
+            --accent: #e94560;
+            --text: #ffffff;
+            --text-secondary: #a8a8a8;
+            --bg-dark: #0a0a0a;
+            --success: #4caf50;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        header {
+            background: var(--primary);
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            background: linear-gradient(135deg, var(--accent), #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .display-area {
+            background: var(--primary);
+            border-radius: 20px;
+            padding: 60px 20px;
+            margin: 30px 0;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        #word-display {
+            font-size: clamp(32px, 8vw, 72px);
+            font-weight: 300;
+            letter-spacing: 0.02em;
+            text-align: center;
+            position: relative;
+        }
+
+        #word-display .focus-letter {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 0 0 20px 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #ff6b6b);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .controls {
+            background: var(--secondary);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .speed-display {
+            min-width: 100px;
+            text-align: right;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        button:hover {
+            background: #ff6b6b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(233, 69, 96, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #444;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button.secondary {
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+        }
+
+        button.secondary:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .text-input {
+            background: var(--secondary);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 16px;
+            color: var(--text);
+            resize: vertical;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 5px;
+        }
+
+        .settings {
+            background: var(--secondary);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--accent);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .shortcuts {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .shortcuts h3 {
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+
+        .shortcut-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+
+        .key {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .display-area {
+                padding: 40px 15px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+            
+            .speed-control {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .speed-display {
+                text-align: center;
+                margin-top: 10px;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>RSVP Speed Reader</h1>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="display-area">
+            <div id="word-display">Ready to start reading</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="speed-slider">Reading Speed</label>
+                <div class="speed-control">
+                    <input type="range" id="speed-slider" min="100" max="1000" value="300" step="10">
+                    <div class="speed-display"><span id="speed-value">300</span> WPM</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="button-group">
+                    <button id="play-btn" onclick="toggleReading()">
+                        <span id="play-text">Play</span>
+                    </button>
+                    <button id="reset-btn" onclick="resetReading()">Reset</button>
+                    <button id="backward-btn" onclick="skipWords(-10)" class="secondary">-10 words</button>
+                    <button id="forward-btn" onclick="skipWords(10)" class="secondary">+10 words</button>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="words-read">0</div>
+                    <div class="stat-label">Words Read</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="words-remaining">0</div>
+                    <div class="stat-label">Words Remaining</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="time-remaining">0:00</div>
+                    <div class="stat-label">Time Remaining</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-input">
+            <label for="text-area">Enter or paste your text</label>
+            <textarea id="text-area" placeholder="Paste your text here to start speed reading..."></textarea>
+            <div class="button-group" style="margin-top: 15px;">
+                <div class="file-input-wrapper">
+                    <button class="secondary">Upload Text File</button>
+                    <input type="file" id="file-input" accept=".txt,.md" onchange="handleFileUpload(event)">
+                </div>
+                <button onclick="loadSampleText()" class="secondary">Load Sample Text</button>
+            </div>
+        </div>
+
+        <div class="settings">
+            <h3 style="margin-bottom: 20px;">Settings</h3>
+            
+            <div class="toggle-group">
+                <label>Dark Mode</label>
+                <label class="toggle">
+                    <input type="checkbox" id="dark-mode" checked onchange="toggleDarkMode()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-group">
+                <label>Highlight Focus Letter</label>
+                <label class="toggle">
+                    <input type="checkbox" id="highlight-focus" checked onchange="toggleHighlightFocus()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-group">
+                <label>Pause on Punctuation</label>
+                <label class="toggle">
+                    <input type="checkbox" id="pause-punctuation" checked onchange="togglePausePunctuation()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="shortcuts">
+                <h3>Keyboard Shortcuts</h3>
+                <div class="shortcut-list">
+                    <div class="shortcut-item">
+                        <span>Play/Pause</span>
+                        <span class="key">Space</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span>Increase Speed</span>
+                        <span class="key">↑</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span>Decrease Speed</span>
+                        <span class="key">↓</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span>Skip Forward</span>
+                        <span class="key">→</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span>Skip Backward</span>
+                        <span class="key">←</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span>Reset</span>
+                        <span class="key">R</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Global variables
+        let words = [];
+        let currentIndex = 0;
+        let isPlaying = false;
+        let intervalId = null;
+        let wpm = 300;
+        let highlightFocus = true;
+        let pausePunctuation = true;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            setupEventListeners();
+            document.getElementById('text-area').focus();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Speed slider
+            const speedSlider = document.getElementById('speed-slider');
+            speedSlider.addEventListener('input', (e) => {
+                wpm = parseInt(e.target.value);
+                document.getElementById('speed-value').textContent = wpm;
+                saveSettings();
+                if (isPlaying) {
+                    stopReading();
+                    startReading();
+                }
+            });
+
+            // Text area
+            document.getElementById('text-area').addEventListener('input', (e) => {
+                if (e.target.value.trim()) {
+                    processText(e.target.value);
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case ' ':
+                        e.preventDefault();
+                        toggleReading();
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        adjustSpeed(10);
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        adjustSpeed(-10);
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        skipWords(10);
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        skipWords(-10);
+                        break;
+                    case 'r':
+                    case 'R':
+                        resetReading();
+                        break;
+                }
+            });
+        }
+
+        // Process text into words
+        function processText(text) {
+            words = text.trim().split(/\s+/).filter(word => word.length > 0);
+            currentIndex = 0;
+            updateStats();
+            updateProgress();
+            if (words.length > 0) {
+                displayWord(words[0]);
+            }
+        }
+
+        // Display word with focus letter highlighting
+        function displayWord(word) {
+            const display = document.getElementById('word-display');
+            
+            if (!word) {
+                display.textContent = '';
+                return;
+            }
+
+            if (!highlightFocus) {
+                display.textContent = word;
+                display.classList.add('fade-in');
+                return;
+            }
+
+            // Calculate optimal focus position (slightly left of center for longer words)
+            let focusIndex = Math.floor(word.length * 0.35);
+            if (word.length <= 3) focusIndex = Math.floor(word.length / 2);
+            
+            const beforeFocus = word.substring(0, focusIndex);
+            const focusLetter = word[focusIndex];
+            const afterFocus = word.substring(focusIndex + 1);
+            
+            display.innerHTML = `${beforeFocus}<span class="focus-letter">${focusLetter}</span>${afterFocus}`;
+            display.classList.add('fade-in');
+            
+            setTimeout(() => display.classList.remove('fade-in'), 100);
+        }
+
+        // Reading control functions
+        function startReading() {
+            if (words.length === 0) return;
+            
+            isPlaying = true;
+            document.getElementById('play-text').textContent = 'Pause';
+            
+            const baseInterval = 60000 / wpm;
+            
+            function showNextWord() {
+                if (currentIndex >= words.length) {
+                    stopReading();
+                    return;
+                }
+                
+                const word = words[currentIndex];
+                displayWord(word);
+                currentIndex++;
+                updateStats();
+                updateProgress();
+                
+                // Calculate delay for next word
+                let delay = baseInterval;
+                
+                if (pausePunctuation) {
+                    // Add delays for punctuation
+                    if (word.match(/[.!?]$/)) {
+                        delay *= 2.5; // Longer pause for sentence endings
+                    } else if (word.match(/[,;:]$/)) {
+                        delay *= 1.5; // Medium pause for commas, etc.
+                    }
+                    
+                    // Slightly longer delay for longer words
+                    if (word.length > 8) {
+                        delay *= 1.2;
+                    }
+                }
+                
+                intervalId = setTimeout(showNextWord, delay);
+            }
+            
+            showNextWord();
+        }
+
+        function stopReading() {
+            isPlaying = false;
+            document.getElementById('play-text').textContent = 'Play';
+            if (intervalId) {
+                clearTimeout(intervalId);
+                intervalId = null;
+            }
+        }
+
+        function toggleReading() {
+            if (isPlaying) {
+                stopReading();
+            } else {
+                startReading();
+            }
+        }
+
+        function resetReading() {
+            stopReading();
+            currentIndex = 0;
+            if (words.length > 0) {
+                displayWord(words[0]);
+            }
+            updateStats();
+            updateProgress();
+        }
+
+        function skipWords(count) {
+            currentIndex = Math.max(0, Math.min(words.length - 1, currentIndex + count));
+            if (words[currentIndex]) {
+                displayWord(words[currentIndex]);
+            }
+            updateStats();
+            updateProgress();
+        }
+
+        function adjustSpeed(change) {
+            const newSpeed = Math.max(100, Math.min(1000, wpm + change));
+            document.getElementById('speed-slider').value = newSpeed;
+            wpm = newSpeed;
+            document.getElementById('speed-value').textContent = wpm;
+            saveSettings();
+            
+            if (isPlaying) {
+                stopReading();
+                startReading();
+            }
+        }
+
+        // Update UI functions
+        function updateStats() {
+            document.getElementById('words-read').textContent = currentIndex;
+            document.getElementById('words-remaining').textContent = Math.max(0, words.length - currentIndex);
+            
+            const wordsLeft = words.length - currentIndex;
+            const minutesLeft = wordsLeft / wpm;
+            const seconds = Math.round(minutesLeft * 60);
+            const displayMinutes = Math.floor(seconds / 60);
+            const displaySeconds = seconds % 60;
+            
+            document.getElementById('time-remaining').textContent = 
+                `${displayMinutes}:${displaySeconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateProgress() {
+            const progress = words.length > 0 ? (currentIndex / words.length) * 100 : 0;
+            document.getElementById('progress').style.width = `${progress}%`;
+        }
+
+        // File handling
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'text/plain' || file.name.endsWith('.md')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('text-area').value = e.target.result;
+                    processText(e.target.result);
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // Sample text
+        function loadSampleText() {
+            const sampleText = `Welcome to RSVP Speed Reader! This revolutionary reading technique displays words one at a time in rapid succession, allowing your brain to process information more efficiently.
+
+Traditional reading requires your eyes to move across the page, which takes time and energy. With RSVP, words appear in a fixed position, eliminating eye movement and potentially doubling or tripling your reading speed.
+
+Start with a comfortable speed around 300 words per minute. As you practice, gradually increase the speed. Many users find they can comfortably read at 500-600 WPM after just a few sessions.
+
+Remember to relax and let the words flow into your mind. Don't try to subvocalize every word. Trust your brain to absorb the meaning. With practice, you'll be amazed at how fast you can read while maintaining excellent comprehension.
+
+Happy speed reading!`;
+            
+            document.getElementById('text-area').value = sampleText;
+            processText(sampleText);
+        }
+
+        // Settings functions
+        function toggleDarkMode() {
+            // In this implementation, we're always in dark mode
+            // This is here for potential light mode implementation
+        }
+
+        function toggleHighlightFocus() {
+            highlightFocus = document.getElementById('highlight-focus').checked;
+            saveSettings();
+            if (words[currentIndex]) {
+                displayWord(words[currentIndex]);
+            }
+        }
+
+        function togglePausePunctuation() {
+            pausePunctuation = document.getElementById('pause-punctuation').checked;
+            saveSettings();
+        }
+
+        function saveSettings() {
+            const settings = {
+                wpm: wpm,
+                highlightFocus: highlightFocus,
+                pausePunctuation: pausePunctuation
+            };
+            localStorage.setItem('rsvpSettings', JSON.stringify(settings));
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('rsvpSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                wpm = settings.wpm || 300;
+                highlightFocus = settings.highlightFocus !== false;
+                pausePunctuation = settings.pausePunctuation !== false;
+                
+                document.getElementById('speed-slider').value = wpm;
+                document.getElementById('speed-value').textContent = wpm;
+                document.getElementById('highlight-focus').checked = highlightFocus;
+                document.getElementById('pause-punctuation').checked = pausePunctuation;
+            }
+        }
+
+        // Service Worker Registration (for PWA functionality)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(registration => {
+                    console.log('ServiceWorker registered:', registration);
+                }).catch(error => {
+                    console.log('ServiceWorker registration failed:', error);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
