@@ -1,0 +1,42 @@
+{
+  "name": "RSVP Speed Reader",
+  "short_name": "Speed Reader",
+  "description": "Read faster with Rapid Serial Visual Presentation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#1a1a2e",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "RSVP Speed Reader in action"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Reading",
+      "short_name": "Read",
+      "description": "Start speed reading immediately",
+      "url": "/?action=start",
+      "icons": [{"src": "icon-96.png", "sizes": "96x96"}]
+    }
+  ]
+}
